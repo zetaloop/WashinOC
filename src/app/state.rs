@@ -9,9 +9,7 @@ pub enum RunState {
     },
     Running {
         mode: WashMode,
-        remaining_ms: u64,
         phase: MotorPhase,
-        phase_remaining_ms: u64,
     },
     Paused {
         mode: WashMode,

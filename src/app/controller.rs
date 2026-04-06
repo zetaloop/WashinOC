@@ -178,18 +178,11 @@ fn handle_running(
         phase_timer.start(now, next_phase.duration_ms());
         return RunState::Running {
             mode,
-            remaining_ms: prog_remaining,
             phase: next_phase,
-            phase_remaining_ms: next_phase.duration_ms(),
         };
     }
 
-    RunState::Running {
-        mode,
-        remaining_ms: prog_remaining,
-        phase,
-        phase_remaining_ms: phase_timer.remaining_ms(now),
-    }
+    RunState::Running { mode, phase }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -210,12 +203,7 @@ fn handle_paused(
             program_timer.start(now, remaining_ms);
             phase_timer.start(now, phase_remaining_ms);
             apply_motor_phase(phase, mode.duty(), motor);
-            RunState::Running {
-                mode,
-                remaining_ms,
-                phase,
-                phase_remaining_ms,
-            }
+            RunState::Running { mode, phase }
         }
         Some(ButtonEvent::LongPress) => finish(motor, phase_timer, program_timer),
         _ => RunState::Paused {
@@ -249,12 +237,7 @@ fn start_program(
     let time = RemainingTime::from_ms(mode.duration_ms());
     display.show_time(time.minutes, time.seconds);
 
-    RunState::Running {
-        mode,
-        remaining_ms: mode.duration_ms(),
-        phase,
-        phase_remaining_ms: phase.duration_ms(),
-    }
+    RunState::Running { mode, phase }
 }
 
 fn apply_motor_phase(phase: MotorPhase, duty: u8, motor: &mut Motor<'_>) {
