@@ -12,6 +12,9 @@ pub const LONG_PRESS_MS: u64 = 800;
 /// Idle timeout before entering deep sleep (after first tap, before long-press start).
 pub const IDLE_TIMEOUT_MS: u64 = 10_000;
 
+/// After program start, pause is ignored during this window to avoid accidental taps.
+pub const PAUSE_LOCKOUT_MS: u64 = 1_000;
+
 /// Motor forward phase duration.
 pub const MOTOR_FORWARD_MS: u64 = 10_000;
 

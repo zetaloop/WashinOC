@@ -16,6 +16,7 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
     let mut idle_timer = SoftTimer::new();
     let mut phase_timer = SoftTimer::new();
     let mut program_timer = SoftTimer::new();
+    let mut pause_lockout_timer = SoftTimer::new();
     let mut blink_timer = SoftTimer::new();
     let mut blink_on = true;
     let mut last_displayed_second: u16 = u16::MAX;
@@ -23,8 +24,10 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
     display.clear();
     motor.set(MotorDirection::Stop, 0);
 
-    // Wait for the initial wake-up press; timeout back to deep sleep
-    let mut state;
+    let mode = WashMode::Min5Lo;
+    display.show_mode(mode);
+
+    // Ignore the wake touch itself so one tap always lands on the first mode.
     let mut wake_timer = SoftTimer::new();
     wake_timer.start(Instant::now(), config::IDLE_TIMEOUT_MS);
     loop {
@@ -32,15 +35,13 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
         if wake_timer.is_expired(now) {
             return;
         }
-        let event = touch.poll(now);
-        if let Some(ButtonEvent::ShortPress) = event {
-            let mode = WashMode::Min5Lo;
-            display.show_mode(mode);
-            idle_timer.start(now, config::IDLE_TIMEOUT_MS);
-            state = RunState::Selecting { mode };
+        if !touch.is_pressed() {
             break;
         }
     }
+
+    idle_timer.start(Instant::now(), config::IDLE_TIMEOUT_MS);
+    let mut state = RunState::Selecting { mode };
 
     loop {
         let now = Instant::now();
@@ -57,6 +58,7 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
                 &mut idle_timer,
                 &mut phase_timer,
                 &mut program_timer,
+                &mut pause_lockout_timer,
                 now,
             ),
 
@@ -68,6 +70,7 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
                 motor,
                 &mut phase_timer,
                 &mut program_timer,
+                &mut pause_lockout_timer,
                 &mut last_displayed_second,
                 &mut blink_timer,
                 &mut blink_on,
@@ -108,6 +111,7 @@ fn handle_selecting(
     idle_timer: &mut SoftTimer,
     phase_timer: &mut SoftTimer,
     program_timer: &mut SoftTimer,
+    pause_lockout_timer: &mut SoftTimer,
     now: Instant,
 ) -> RunState {
     match event {
@@ -119,7 +123,15 @@ fn handle_selecting(
         }
         Some(ButtonEvent::LongPress) => {
             idle_timer.cancel();
-            start_program(mode, display, motor, phase_timer, program_timer, now)
+            start_program(
+                mode,
+                display,
+                motor,
+                phase_timer,
+                program_timer,
+                pause_lockout_timer,
+                now,
+            )
         }
         _ => {
             if idle_timer.is_expired(now) {
@@ -140,6 +152,7 @@ fn handle_running(
     motor: &mut Motor<'_>,
     phase_timer: &mut SoftTimer,
     program_timer: &mut SoftTimer,
+    pause_lockout_timer: &mut SoftTimer,
     last_displayed_second: &mut u16,
     blink_timer: &mut SoftTimer,
     blink_on: &mut bool,
@@ -154,11 +167,15 @@ fn handle_running(
 
     match event {
         Some(ButtonEvent::ShortPress) => {
+            if !pause_lockout_timer.is_expired(now) {
+                return RunState::Running { mode, phase };
+            }
             motor.set(MotorDirection::Stop, 0);
             let pr = phase_timer.remaining_ms(now);
             phase_timer.cancel();
             program_timer.cancel();
-            *blink_on = true;
+            *blink_on = false;
+            display.clear();
             blink_timer.start(now, BLINK_INTERVAL_MS);
             return RunState::Paused {
                 mode,
@@ -258,11 +275,13 @@ fn start_program(
     motor: &mut Motor<'_>,
     phase_timer: &mut SoftTimer,
     program_timer: &mut SoftTimer,
+    pause_lockout_timer: &mut SoftTimer,
     now: Instant,
 ) -> RunState {
     let phase = MotorPhase::Forward;
     program_timer.start(now, mode.duration_ms());
     phase_timer.start(now, phase.duration_ms());
+    pause_lockout_timer.start(now, config::PAUSE_LOCKOUT_MS);
     apply_motor_phase(phase, mode.duty(), motor);
 
     let time = RemainingTime::from_ms(mode.duration_ms());

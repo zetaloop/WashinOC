@@ -67,4 +67,8 @@ impl<'d> TouchButton<'d> {
 
         None
     }
+
+    pub fn is_pressed(&self) -> bool {
+        self.pin.is_high()
+    }
 }
