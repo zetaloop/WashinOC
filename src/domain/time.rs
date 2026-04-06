@@ -8,10 +8,10 @@ pub struct RemainingTime {
 impl RemainingTime {
     /// Build from remaining milliseconds.
     pub const fn from_ms(ms: u64) -> Self {
-        let total_secs = (ms / 1_000) as u8;
+        let total_secs = (ms / 1_000) as u32;
         Self {
-            minutes: total_secs / 60,
-            seconds: total_secs % 60,
+            minutes: (total_secs / 60) as u8,
+            seconds: (total_secs % 60) as u8,
         }
     }
 
