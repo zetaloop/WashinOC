@@ -26,7 +26,7 @@ impl<'d> Display<'d> {
             WashMode::Min10Lo => [DIGITS[1], DIGITS[0] | SEG_COLON, SEG_L, SEG_O],
             WashMode::Min10Hi => [DIGITS[1], DIGITS[0] | SEG_COLON, SEG_H, SEG_I],
         };
-        let _ = self.tm.display_slice(0, &segments);
+        self.write_segments(&segments);
     }
 
     pub fn show_time(&mut self, minutes: u8, seconds: u8) {
@@ -36,15 +36,21 @@ impl<'d> Display<'d> {
             DIGITS[(seconds / 10) as usize],
             DIGITS[(seconds % 10) as usize],
         ];
-        let _ = self.tm.display_slice(0, &segments);
+        self.write_segments(&segments);
     }
 
     pub fn clear(&mut self) {
+        let _ = self.tm.on();
         let _ = self.tm.clear();
     }
 
     pub fn show_shutdown(&mut self) {
-        let _ = self.tm.display_slice(0, &[SEG_DASH; 4]);
+        self.write_segments(&[SEG_DASH; 4]);
+    }
+
+    fn write_segments(&mut self, segments: &[u8; 4]) {
+        let _ = self.tm.on();
+        let _ = self.tm.display_slice(0, segments);
     }
 }
 
