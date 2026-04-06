@@ -3,6 +3,8 @@ use esp_hal::gpio::Output;
 use tm1637_embedded_hal::tokens::Blocking;
 use tm1637_embedded_hal::{Brightness, TM1637Builder};
 
+use crate::domain::mode::WashMode;
+
 pub struct Display<'d> {
     tm: tm1637_embedded_hal::TM1637<4, Blocking, Output<'d>, Output<'d>, Delay>,
 }
@@ -17,8 +19,13 @@ impl<'d> Display<'d> {
         Self { tm }
     }
 
-    pub fn show_mode_label(&mut self, label: &[u8; 4]) {
-        let segments = label.map(ascii_to_segment);
+    pub fn show_mode(&mut self, mode: WashMode) {
+        let segments = match mode {
+            WashMode::Min5Lo => [SEG_BLANK, DIGITS[5] | SEG_COLON, SEG_L, SEG_O],
+            WashMode::Min5Hi => [SEG_BLANK, DIGITS[5] | SEG_COLON, SEG_H, SEG_I],
+            WashMode::Min10Lo => [DIGITS[1], DIGITS[0] | SEG_COLON, SEG_L, SEG_O],
+            WashMode::Min10Hi => [DIGITS[1], DIGITS[0] | SEG_COLON, SEG_H, SEG_I],
+        };
         let _ = self.tm.display_slice(0, &segments);
     }
 
@@ -38,6 +45,11 @@ impl<'d> Display<'d> {
 }
 
 const SEG_COLON: u8 = 0x80;
+const SEG_BLANK: u8 = 0x00;
+const SEG_L: u8 = 0x38;
+const SEG_O: u8 = 0x5C;
+const SEG_H: u8 = 0x76;
+const SEG_I: u8 = 0x10;
 
 #[rustfmt::skip]
 const DIGITS: [u8; 10] = [
@@ -52,15 +64,3 @@ const DIGITS: [u8; 10] = [
     0x7F, // 8
     0x6F, // 9
 ];
-
-fn ascii_to_segment(ch: u8) -> u8 {
-    match ch {
-        b'0'..=b'9' => DIGITS[(ch - b'0') as usize],
-        b'L' => 0x38,
-        b'o' => 0x5C,
-        b'H' => 0x76,
-        b'i' => 0x04,
-        b' ' => 0x00,
-        _ => 0x00,
-    }
-}

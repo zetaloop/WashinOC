@@ -35,7 +35,7 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
         let event = touch.poll(now);
         if let Some(ButtonEvent::ShortPress) = event {
             let mode = WashMode::Min5Lo;
-            display.show_mode_label(mode.label());
+            display.show_mode(mode);
             idle_timer.start(now, config::IDLE_TIMEOUT_MS);
             state = RunState::Selecting { mode };
             break;
@@ -113,7 +113,7 @@ fn handle_selecting(
     match event {
         Some(ButtonEvent::ShortPress) => {
             let next = mode.next();
-            display.show_mode_label(next.label());
+            display.show_mode(next);
             idle_timer.start(now, config::IDLE_TIMEOUT_MS);
             RunState::Selecting { mode: next }
         }
