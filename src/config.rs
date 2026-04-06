@@ -16,19 +16,19 @@ pub const IDLE_TIMEOUT_MS: u64 = 10_000;
 pub const MOTOR_FORWARD_MS: u64 = 10_000;
 
 /// Motor stop gap between direction changes.
-pub const MOTOR_STOP_MS: u64 = 2_000;
+pub const MOTOR_STOP_MS: u64 = 1_500;
 
 /// Motor reverse phase duration.
 pub const MOTOR_REVERSE_MS: u64 = 10_000;
 
 /// PWM frequency for motor driver (Hz).
-pub const MOTOR_PWM_HZ: u32 = 1_000;
+pub const MOTOR_PWM_HZ: u32 = 2000;
 
 /// Duty cycle for LO (weak) mode — approx 6 V from 9 V supply.
-pub const DUTY_LO: u8 = 67;
+pub const DUTY_LO: u8 = 65;
 
 /// Duty cycle for HI (strong) mode — approx 8 V from 9 V supply.
-pub const DUTY_HI: u8 = 89;
+pub const DUTY_HI: u8 = 100;
 
 /// Safety delay before reversing motor direction.
 /// The driver module datasheet requires ≥ 500 ms.

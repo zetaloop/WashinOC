@@ -276,7 +276,7 @@ fn apply_motor_phase(phase: MotorPhase, duty: u8, motor: &mut Motor<'_>) {
         MotorPhase::Forward => motor.set(MotorDirection::Forward, duty),
         MotorPhase::Reverse => motor.set(MotorDirection::Reverse, duty),
         MotorPhase::StopAfterForward | MotorPhase::StopAfterReverse => {
-            motor.set(MotorDirection::Stop, 0);
+            motor.set(MotorDirection::Brake, 0);
         }
     }
 }
