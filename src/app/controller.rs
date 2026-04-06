@@ -23,10 +23,15 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
     display.clear();
     motor.set(MotorDirection::Stop, 0);
 
-    // Wait for the initial wake-up press (first tick after deep sleep reset)
+    // Wait for the initial wake-up press; timeout back to deep sleep
     let mut state;
+    let mut wake_timer = SoftTimer::new();
+    wake_timer.start(Instant::now(), config::IDLE_TIMEOUT_MS);
     loop {
         let now = Instant::now();
+        if wake_timer.is_expired(now) {
+            return;
+        }
         let event = touch.poll(now);
         if let Some(ButtonEvent::ShortPress) = event {
             let mode = WashMode::Min5Lo;
