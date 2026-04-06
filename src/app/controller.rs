@@ -19,6 +19,7 @@ pub fn main_loop(
     let mut idle_timer = SoftTimer::new();
     let mut phase_timer = SoftTimer::new();
     let mut program_timer = SoftTimer::new();
+    let mut last_displayed_second: u16 = u16::MAX;
 
     display.clear();
     motor.set(MotorDirection::Stop, 0);
@@ -49,6 +50,7 @@ pub fn main_loop(
                 motor,
                 &mut phase_timer,
                 &mut program_timer,
+                &mut last_displayed_second,
                 now,
             ),
 
@@ -133,9 +135,11 @@ fn handle_running(
     motor: &mut Motor<'_>,
     phase_timer: &mut SoftTimer,
     program_timer: &mut SoftTimer,
+    last_displayed_second: &mut u16,
     now: Instant,
 ) -> RunState {
     if program_timer.is_expired(now) {
+        *last_displayed_second = u16::MAX;
         return finish(motor, phase_timer, program_timer);
     }
 
@@ -155,13 +159,18 @@ fn handle_running(
             };
         }
         Some(ButtonEvent::LongPress) => {
+            *last_displayed_second = u16::MAX;
             return finish(motor, phase_timer, program_timer);
         }
         _ => {}
     }
 
-    let time = RemainingTime::from_ms(prog_remaining);
-    display.show_time(time.minutes, time.seconds);
+    let total_secs = (prog_remaining / 1_000) as u16;
+    if total_secs != *last_displayed_second {
+        *last_displayed_second = total_secs;
+        let time = RemainingTime::from_ms(prog_remaining);
+        display.show_time(time.minutes, time.seconds);
+    }
 
     if phase_timer.is_expired(now) {
         let next_phase = phase.next();
