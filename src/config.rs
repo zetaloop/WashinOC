@@ -15,6 +15,9 @@ pub const IDLE_TIMEOUT_MS: u64 = 10_000;
 /// After program start, pause is ignored during this window to avoid accidental taps.
 pub const PAUSE_LOCKOUT_MS: u64 = 1_000;
 
+/// Shutdown frame duration before entering deep sleep.
+pub const SHUTDOWN_FRAME_MS: u64 = 300;
+
 /// Motor forward phase duration.
 pub const MOTOR_FORWARD_MS: u64 = 10_000;
 

@@ -42,10 +42,15 @@ impl<'d> Display<'d> {
     pub fn clear(&mut self) {
         let _ = self.tm.clear();
     }
+
+    pub fn show_shutdown(&mut self) {
+        let _ = self.tm.display_slice(0, &[SEG_DASH; 4]);
+    }
 }
 
 const SEG_COLON: u8 = 0x80;
 const SEG_BLANK: u8 = 0x00;
+const SEG_DASH: u8 = 0x40;
 const SEG_L: u8 = 0x38;
 const SEG_O: u8 = 0x5C;
 const SEG_H: u8 = 0x76;

@@ -1,3 +1,4 @@
+use esp_hal::delay::Delay;
 use esp_hal::gpio::{DriveMode, Input, InputConfig, Level, Output, OutputConfig, Pull};
 use esp_hal::ledc::channel::{self, ChannelIFace, Number as ChannelNumber};
 use esp_hal::ledc::timer::{self, TimerIFace};
@@ -71,6 +72,8 @@ pub fn run(mut p: Peripherals) -> ! {
     #[allow(clippy::drop_non_drop)]
     core::mem::drop(touch);
 
+    display.show_shutdown();
+    Delay::new().delay_millis(config::SHUTDOWN_FRAME_MS as u32);
     display.clear();
 
     // Wait for touch release before sleeping; ext0 is level-triggered HIGH,
