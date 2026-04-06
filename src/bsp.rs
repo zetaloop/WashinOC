@@ -15,9 +15,15 @@ pub fn run(p: Peripherals) -> ! {
     let touch_pin = Input::new(p.GPIO4, InputConfig::default().with_pull(Pull::Down));
     let mut touch = TouchButton::new(touch_pin);
 
-    // TM1637: CLK=GPIO16, DIO=GPIO17
+    // TM1637: CLK=GPIO16 (push-pull), DIO=GPIO17 (open-drain + pull-up for ACK)
     let clk = Output::new(p.GPIO16, Level::Low, OutputConfig::default());
-    let dio = Output::new(p.GPIO17, Level::Low, OutputConfig::default());
+    let dio = Output::new(
+        p.GPIO17,
+        Level::High,
+        OutputConfig::default()
+            .with_drive_mode(DriveMode::OpenDrain)
+            .with_pull(Pull::Up),
+    );
     let mut display = Display::new(clk, dio);
 
     // Motor PWM: IN1=GPIO18 (Ch0), IN2=GPIO19 (Ch1) via LEDC
