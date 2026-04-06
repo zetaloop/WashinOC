@@ -3,6 +3,8 @@ use esp_hal::ledc::channel::{self, ChannelIFace, Number as ChannelNumber};
 use esp_hal::ledc::timer::{self, TimerIFace};
 use esp_hal::ledc::{LSGlobalClkSource, Ledc, LowSpeed};
 use esp_hal::peripherals::Peripherals;
+use esp_hal::rtc_cntl::sleep::{Ext0WakeupSource, WakeupLevel};
+use esp_hal::rtc_cntl::Rtc;
 use esp_hal::time::Rate;
 
 use crate::config;
@@ -10,9 +12,12 @@ use crate::drivers::display::Display;
 use crate::drivers::motor::Motor;
 use crate::drivers::touch::TouchButton;
 
-pub fn run(p: Peripherals) -> ! {
-    // Touch sensor: GPIO4, active HIGH, pull down
-    let touch_pin = Input::new(p.GPIO4, InputConfig::default().with_pull(Pull::Down));
+pub fn run(mut p: Peripherals) -> ! {
+    // Touch sensor: GPIO4, active HIGH, pull down (reborrow so we can reclaim for deep sleep)
+    let touch_pin = Input::new(
+        p.GPIO4.reborrow(),
+        InputConfig::default().with_pull(Pull::Down),
+    );
     let mut touch = TouchButton::new(touch_pin);
 
     // TM1637: CLK=GPIO16 (push-pull), DIO=GPIO17 (open-drain + pull-up for ACK)
@@ -59,5 +64,14 @@ pub fn run(p: Peripherals) -> ! {
 
     let mut motor = Motor::new(ch_in1, ch_in2);
 
-    crate::app::controller::main_loop(&mut touch, &mut display, &mut motor)
+    crate::app::controller::main_loop(&mut touch, &mut display, &mut motor);
+
+    // main_loop returned — time to enter deep sleep
+    // drop touch to end GPIO4 reborrow, allowing move into Ext0WakeupSource
+    #[allow(clippy::drop_non_drop)]
+    core::mem::drop(touch);
+
+    let mut rtc = Rtc::new(p.LPWR);
+    let ext0 = Ext0WakeupSource::new(p.GPIO4, WakeupLevel::High);
+    rtc.sleep_deep(&[&ext0])
 }

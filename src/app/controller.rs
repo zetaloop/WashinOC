@@ -10,12 +10,9 @@ use crate::drivers::display::Display;
 use crate::drivers::motor::{Motor, MotorDirection};
 use crate::drivers::touch::{ButtonEvent, TouchButton};
 
-pub fn main_loop(
-    touch: &mut TouchButton<'_>,
-    display: &mut Display<'_>,
-    motor: &mut Motor<'_>,
-) -> ! {
-    let mut state = RunState::Sleeping;
+/// Runs the main state machine loop.
+/// Returns when the device should enter deep sleep (state transitions to Sleeping).
+pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: &mut Motor<'_>) {
     let mut idle_timer = SoftTimer::new();
     let mut phase_timer = SoftTimer::new();
     let mut program_timer = SoftTimer::new();
@@ -24,12 +21,26 @@ pub fn main_loop(
     display.clear();
     motor.set(MotorDirection::Stop, 0);
 
+    // Wait for the initial wake-up press (first tick after deep sleep reset)
+    let mut state;
+    loop {
+        let now = Instant::now();
+        let event = touch.poll(now);
+        if let Some(ButtonEvent::ShortPress) = event {
+            let mode = WashMode::Min5Lo;
+            display.show_mode_label(mode.label());
+            idle_timer.start(now, config::IDLE_TIMEOUT_MS);
+            state = RunState::Selecting { mode };
+            break;
+        }
+    }
+
     loop {
         let now = Instant::now();
         let event = touch.poll(now);
 
         state = match state {
-            RunState::Sleeping => handle_sleeping(event, display, &mut idle_timer, now),
+            RunState::Sleeping => break,
 
             RunState::Selecting { mode } => handle_selecting(
                 event,
@@ -74,23 +85,6 @@ pub fn main_loop(
 
             RunState::Finishing => handle_finishing(display, motor),
         };
-    }
-}
-
-fn handle_sleeping(
-    event: Option<ButtonEvent>,
-    display: &mut Display<'_>,
-    idle_timer: &mut SoftTimer,
-    now: Instant,
-) -> RunState {
-    match event {
-        Some(ButtonEvent::ShortPress) => {
-            let mode = WashMode::Min5Lo;
-            display.show_mode_label(mode.label());
-            idle_timer.start(now, config::IDLE_TIMEOUT_MS);
-            RunState::Selecting { mode }
-        }
-        _ => RunState::Sleeping,
     }
 }
 
