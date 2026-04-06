@@ -16,6 +16,8 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
     let mut idle_timer = SoftTimer::new();
     let mut phase_timer = SoftTimer::new();
     let mut program_timer = SoftTimer::new();
+    let mut blink_timer = SoftTimer::new();
+    let mut blink_on = true;
     let mut last_displayed_second: u16 = u16::MAX;
 
     display.clear();
@@ -62,6 +64,8 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
                 &mut phase_timer,
                 &mut program_timer,
                 &mut last_displayed_second,
+                &mut blink_timer,
+                &mut blink_on,
                 now,
             ),
 
@@ -80,6 +84,8 @@ pub fn main_loop(touch: &mut TouchButton<'_>, display: &mut Display<'_>, motor: 
                 motor,
                 &mut phase_timer,
                 &mut program_timer,
+                &mut blink_timer,
+                &mut blink_on,
                 now,
             ),
 
@@ -130,6 +136,8 @@ fn handle_running(
     phase_timer: &mut SoftTimer,
     program_timer: &mut SoftTimer,
     last_displayed_second: &mut u16,
+    blink_timer: &mut SoftTimer,
+    blink_on: &mut bool,
     now: Instant,
 ) -> RunState {
     if program_timer.is_expired(now) {
@@ -145,6 +153,8 @@ fn handle_running(
             let pr = phase_timer.remaining_ms(now);
             phase_timer.cancel();
             program_timer.cancel();
+            *blink_on = true;
+            blink_timer.start(now, BLINK_INTERVAL_MS);
             return RunState::Paused {
                 mode,
                 remaining_ms: prog_remaining,
@@ -179,6 +189,8 @@ fn handle_running(
     RunState::Running { mode, phase }
 }
 
+const BLINK_INTERVAL_MS: u64 = 500;
+
 #[allow(clippy::too_many_arguments)]
 fn handle_paused(
     event: Option<ButtonEvent>,
@@ -186,26 +198,46 @@ fn handle_paused(
     remaining_ms: u64,
     phase: MotorPhase,
     phase_remaining_ms: u64,
-    _display: &mut Display<'_>,
+    display: &mut Display<'_>,
     motor: &mut Motor<'_>,
     phase_timer: &mut SoftTimer,
     program_timer: &mut SoftTimer,
+    blink_timer: &mut SoftTimer,
+    blink_on: &mut bool,
     now: Instant,
 ) -> RunState {
     match event {
         Some(ButtonEvent::ShortPress) => {
+            blink_timer.cancel();
             program_timer.start(now, remaining_ms);
             phase_timer.start(now, phase_remaining_ms);
             apply_motor_phase(phase, mode.duty(), motor);
+            let time = RemainingTime::from_ms(remaining_ms);
+            display.show_time(time.minutes, time.seconds);
             RunState::Running { mode, phase }
         }
-        Some(ButtonEvent::LongPress) => finish(motor, phase_timer, program_timer),
-        _ => RunState::Paused {
-            mode,
-            remaining_ms,
-            phase,
-            phase_remaining_ms,
-        },
+        Some(ButtonEvent::LongPress) => {
+            blink_timer.cancel();
+            finish(motor, phase_timer, program_timer)
+        }
+        _ => {
+            if blink_timer.is_expired(now) {
+                *blink_on = !*blink_on;
+                if *blink_on {
+                    let time = RemainingTime::from_ms(remaining_ms);
+                    display.show_time(time.minutes, time.seconds);
+                } else {
+                    display.clear();
+                }
+                blink_timer.start(now, BLINK_INTERVAL_MS);
+            }
+            RunState::Paused {
+                mode,
+                remaining_ms,
+                phase,
+                phase_remaining_ms,
+            }
+        }
     }
 }
 
