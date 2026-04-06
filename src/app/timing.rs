@@ -4,6 +4,12 @@ pub struct SoftTimer {
     deadline: Option<Instant>,
 }
 
+impl Default for SoftTimer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SoftTimer {
     pub const fn new() -> Self {
         Self { deadline: None }

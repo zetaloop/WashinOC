@@ -1,7 +1,7 @@
-/// Hardware and application constants for WashinOC.
-///
-/// All timing values are in milliseconds unless otherwise noted.
-/// All duty-cycle values are in percent (0–100).
+//! Hardware and application constants for WashinOC.
+//!
+//! All timing values are in milliseconds unless otherwise noted.
+//! All duty-cycle values are in percent (0–100).
 
 /// Touch button debounce window.
 pub const DEBOUNCE_MS: u64 = 50;

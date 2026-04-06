@@ -35,13 +35,15 @@ impl<'d> TouchButton<'d> {
             return None;
         }
 
-        if is_high && self.was_pressed && !self.long_fired {
-            if let Some(start) = self.pressed_at {
-                let held = now - start;
-                if held >= esp_hal::time::Duration::from_millis(config::LONG_PRESS_MS) {
-                    self.long_fired = true;
-                    return Some(ButtonEvent::LongPress);
-                }
+        if is_high
+            && self.was_pressed
+            && !self.long_fired
+            && let Some(start) = self.pressed_at
+        {
+            let held = now - start;
+            if held >= esp_hal::time::Duration::from_millis(config::LONG_PRESS_MS) {
+                self.long_fired = true;
+                return Some(ButtonEvent::LongPress);
             }
         }
 

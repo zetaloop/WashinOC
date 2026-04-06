@@ -92,6 +92,7 @@ fn handle_sleeping(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_selecting(
     event: Option<ButtonEvent>,
     mode: WashMode,
@@ -122,6 +123,7 @@ fn handle_selecting(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_running(
     event: Option<ButtonEvent>,
     mode: WashMode,
@@ -175,6 +177,7 @@ fn handle_running(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn handle_paused(
     event: Option<ButtonEvent>,
     mode: WashMode,

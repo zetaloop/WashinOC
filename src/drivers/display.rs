@@ -16,7 +16,7 @@ impl<'d> Display<'d> {
     }
 
     pub fn show_mode_label(&mut self, label: &[u8; 4]) {
-        let segments = label.map(|ch| ascii_to_segment(ch));
+        let segments = label.map(ascii_to_segment);
         self.write_segments(&segments);
     }
 
