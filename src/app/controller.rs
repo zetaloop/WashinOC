@@ -103,11 +103,6 @@ fn handle_selecting(
     program_timer: &mut SoftTimer,
     now: Instant,
 ) -> RunState {
-    if idle_timer.is_expired(now) {
-        display.clear();
-        return RunState::Sleeping;
-    }
-
     match event {
         Some(ButtonEvent::ShortPress) => {
             let next = mode.next();
@@ -119,7 +114,13 @@ fn handle_selecting(
             idle_timer.cancel();
             start_program(mode, display, motor, phase_timer, program_timer, now)
         }
-        _ => RunState::Selecting { mode },
+        _ => {
+            if idle_timer.is_expired(now) {
+                display.clear();
+                return RunState::Sleeping;
+            }
+            RunState::Selecting { mode }
+        }
     }
 }
 
@@ -139,6 +140,26 @@ fn handle_running(
     }
 
     let prog_remaining = program_timer.remaining_ms(now);
+
+    match event {
+        Some(ButtonEvent::ShortPress) => {
+            motor.set(MotorDirection::Stop, 0);
+            let pr = phase_timer.remaining_ms(now);
+            phase_timer.cancel();
+            program_timer.cancel();
+            return RunState::Paused {
+                mode,
+                remaining_ms: prog_remaining,
+                phase,
+                phase_remaining_ms: pr,
+            };
+        }
+        Some(ButtonEvent::LongPress) => {
+            return finish(motor, phase_timer, program_timer);
+        }
+        _ => {}
+    }
+
     let time = RemainingTime::from_ms(prog_remaining);
     display.show_time(time.minutes, time.seconds);
 
@@ -154,26 +175,11 @@ fn handle_running(
         };
     }
 
-    match event {
-        Some(ButtonEvent::ShortPress) => {
-            motor.set(MotorDirection::Stop, 0);
-            let pr = phase_timer.remaining_ms(now);
-            phase_timer.cancel();
-            program_timer.cancel();
-            RunState::Paused {
-                mode,
-                remaining_ms: prog_remaining,
-                phase,
-                phase_remaining_ms: pr,
-            }
-        }
-        Some(ButtonEvent::LongPress) => finish(motor, phase_timer, program_timer),
-        _ => RunState::Running {
-            mode,
-            remaining_ms: prog_remaining,
-            phase,
-            phase_remaining_ms: phase_timer.remaining_ms(now),
-        },
+    RunState::Running {
+        mode,
+        remaining_ms: prog_remaining,
+        phase,
+        phase_remaining_ms: phase_timer.remaining_ms(now),
     }
 }
 
