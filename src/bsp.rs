@@ -71,6 +71,20 @@ pub fn run(mut p: Peripherals) -> ! {
     #[allow(clippy::drop_non_drop)]
     core::mem::drop(touch);
 
+    display.clear();
+
+    // Wait for touch release before sleeping; ext0 is level-triggered HIGH,
+    // sleeping while GPIO4 is still high would cause immediate re-wake.
+    {
+        let pin = Input::new(
+            p.GPIO4.reborrow(),
+            InputConfig::default().with_pull(Pull::Down),
+        );
+        while pin.is_high() {
+            core::hint::spin_loop();
+        }
+    }
+
     let mut rtc = Rtc::new(p.LPWR);
     let ext0 = Ext0WakeupSource::new(p.GPIO4, WakeupLevel::High);
     rtc.sleep_deep(&[&ext0])
