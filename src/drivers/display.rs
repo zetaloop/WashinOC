@@ -21,20 +21,20 @@ impl<'d> Display<'d> {
 
     pub fn show_mode(&mut self, mode: WashMode) {
         let segments = match mode {
-            WashMode::Min5Lo => [SEG_BLANK, DIGITS[5] | SEG_COLON, SEG_L, SEG_O],
-            WashMode::Min5Hi => [SEG_BLANK, DIGITS[5] | SEG_COLON, SEG_H, SEG_I],
-            WashMode::Min10Lo => [DIGITS[1], DIGITS[0] | SEG_COLON, SEG_L, SEG_O],
-            WashMode::Min10Hi => [DIGITS[1], DIGITS[0] | SEG_COLON, SEG_H, SEG_I],
+            WashMode::Min5Lo => [SEG_O, SEG_L | SEG_COLON, DIGITS[5], SEG_BLANK],
+            WashMode::Min5Hi => [SEG_I, SEG_H | SEG_COLON, DIGITS[5], SEG_BLANK],
+            WashMode::Min10Lo => [SEG_O, SEG_L | SEG_COLON, DIGITS[0], DIGITS[1]],
+            WashMode::Min10Hi => [SEG_I, SEG_H | SEG_COLON, DIGITS[0], DIGITS[1]],
         };
         self.write_segments(&segments);
     }
 
     pub fn show_time(&mut self, minutes: u8, seconds: u8) {
         let segments = [
-            DIGITS[(minutes / 10) as usize],
-            DIGITS[(minutes % 10) as usize] | SEG_COLON,
-            DIGITS[(seconds / 10) as usize],
             DIGITS[(seconds % 10) as usize],
+            DIGITS[(seconds / 10) as usize] | SEG_COLON,
+            DIGITS[(minutes % 10) as usize],
+            DIGITS[(minutes / 10) as usize],
         ];
         self.write_segments(&segments);
     }
@@ -57,21 +57,21 @@ impl<'d> Display<'d> {
 const SEG_COLON: u8 = 0x80;
 const SEG_BLANK: u8 = 0x00;
 const SEG_DASH: u8 = 0x40;
-const SEG_L: u8 = 0x38;
-const SEG_O: u8 = 0x5C;
+const SEG_L: u8 = 0x07;
+const SEG_O: u8 = 0x63;
 const SEG_H: u8 = 0x76;
-const SEG_I: u8 = 0x10;
+const SEG_I: u8 = 0x02;
 
 #[rustfmt::skip]
 const DIGITS: [u8; 10] = [
     0x3F, // 0
-    0x06, // 1
+    0x30, // 1
     0x5B, // 2
-    0x4F, // 3
-    0x66, // 4
+    0x79, // 3
+    0x74, // 4
     0x6D, // 5
-    0x7D, // 6
-    0x07, // 7
+    0x6F, // 6
+    0x38, // 7
     0x7F, // 8
-    0x6F, // 9
+    0x7D, // 9
 ];
