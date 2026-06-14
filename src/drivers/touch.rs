@@ -26,16 +26,16 @@ impl<'d> TouchButton<'d> {
     }
 
     pub fn poll(&mut self, now: Instant) -> Option<ButtonEvent> {
-        let is_high = self.pin.is_high();
+        let is_pressed = self.pin.is_low();
 
-        if is_high && !self.was_pressed {
+        if is_pressed && !self.was_pressed {
             self.pressed_at = Some(now);
             self.was_pressed = true;
             self.long_fired = false;
             return None;
         }
 
-        if is_high
+        if is_pressed
             && self.was_pressed
             && !self.long_fired
             && let Some(start) = self.pressed_at
@@ -47,7 +47,7 @@ impl<'d> TouchButton<'d> {
             }
         }
 
-        if !is_high && self.was_pressed {
+        if !is_pressed && self.was_pressed {
             self.was_pressed = false;
             let event = if self.long_fired {
                 None
@@ -69,6 +69,6 @@ impl<'d> TouchButton<'d> {
     }
 
     pub fn is_pressed(&self) -> bool {
-        self.pin.is_high()
+        self.pin.is_low()
     }
 }

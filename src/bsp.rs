@@ -14,10 +14,10 @@ use crate::drivers::motor::Motor;
 use crate::drivers::touch::TouchButton;
 
 pub fn run(mut p: Peripherals) -> ! {
-    // Touch sensor: GPIO4, active HIGH, pull down (reborrow so we can reclaim for deep sleep)
+    // Touch sensor: GPIO4, active LOW, pull up (reborrow so we can reclaim for deep sleep)
     let touch_pin = Input::new(
         p.GPIO4.reborrow(),
-        InputConfig::default().with_pull(Pull::Down),
+        InputConfig::default().with_pull(Pull::Up),
     );
     let mut touch = TouchButton::new(touch_pin);
 
@@ -76,19 +76,19 @@ pub fn run(mut p: Peripherals) -> ! {
     Delay::new().delay_millis(config::SHUTDOWN_FRAME_MS as u32);
     display.clear();
 
-    // Wait for touch release before sleeping; ext0 is level-triggered HIGH,
-    // sleeping while GPIO4 is still high would cause immediate re-wake.
+    // Wait for touch release before sleeping; ext0 is level-triggered LOW,
+    // sleeping while GPIO4 is still low would cause immediate re-wake.
     {
         let pin = Input::new(
             p.GPIO4.reborrow(),
-            InputConfig::default().with_pull(Pull::Down),
+            InputConfig::default().with_pull(Pull::Up),
         );
-        while pin.is_high() {
+        while pin.is_low() {
             core::hint::spin_loop();
         }
     }
 
     let mut rtc = Rtc::new(p.LPWR);
-    let ext0 = Ext0WakeupSource::new(p.GPIO4, WakeupLevel::High);
+    let ext0 = Ext0WakeupSource::new(p.GPIO4, WakeupLevel::Low);
     rtc.sleep_deep(&[&ext0])
 }
