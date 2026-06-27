@@ -27,6 +27,15 @@ pub const MOTOR_STOP_MS: u64 = 1_500;
 /// Motor reverse phase duration.
 pub const MOTOR_REVERSE_MS: u64 = 10_000;
 
+/// PWM duty cycle used at the beginning of a wash program.
+pub const MOTOR_STARTUP_DUTY: u8 = 5;
+
+/// Time between soft-start duty-cycle increases.
+pub const MOTOR_STARTUP_STEP_MS: u64 = 25;
+
+/// Number of soft-start steps before reaching the selected duty cycle.
+pub const MOTOR_STARTUP_STEPS: u8 = 40;
+
 /// PWM frequency for motor driver (Hz).
 pub const MOTOR_PWM_HZ: u32 = 2000;
 

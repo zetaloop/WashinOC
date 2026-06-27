@@ -10,6 +10,7 @@ pub enum RunState {
     Running {
         mode: WashMode,
         phase: MotorPhase,
+        startup_step: u8,
     },
     Paused {
         mode: WashMode,
